@@ -2,23 +2,138 @@ name: Manual Deployment Controller
 on:
   workflow_dispatch:
     inputs:
-    # Your 5 inputs here (environment, version, skip_tests, strategy, channel)
+      environment:
+        description: "Choose target environment"
+        required: true
+        default: staging
+        type: choice
+        options:
+          - staging
+          - production
+          - development
+      version:
+        description: "Version or tag to deploy (e.g., v1.2.3)"
+        required: true
+        default: latest
+        type: string
+      skip_tests:
+        description: "Skip testing phase (use with caution)"
+        required: false
+        default: false
+        type: boolean
+      strategy:
+        description: "Deployment strategy"
+        required: true
+        default: rolling
+        type: choice
+        options:
+          - rolling
+          - blue-green
+          - canary
+      channel:
+        description: "Slack channel for notifications (optional)"
+        required: false
+        default: "#deployments"
+        type: string
 
 jobs:
   validate-inputs:
     runs-on: ubuntu-latest
     steps:
-    # Your validation steps here
+      - name: Display Input Summary
+        run: |
+          echo "=== Deployment Summary ==="
+          echo "🎯 Target Environment: ${{ github.event.inputs.environment }}"
+          echo "📦 Version: ${{ github.event.inputs.version }}"
+          echo "🧪 Skip Tests: ${{ github.event.inputs.skip_tests }}"
+          echo "🚀 Strategy: ${{ github.event.inputs.strategy }}"
+          echo "📢 Notification Channel: ${{ github.event.inputs.channel }}"
+          echo "👤 Triggered by: ${{ github.actor }}"
+          echo "⏰ Deployment Time: $(date)"
+
+      - name: Environment-Specific Validation
+        run: |
+          if [[ "${{ github.event.inputs.environment }}" == "production" ]]; then
+            echo "⚠️  WARNING: You are deploying to PRODUCTION!"
+          elif [[ "${{ github.event.inputs.environment }}" == "staging" ]]; then
+            echo "ℹ️  Deploying to STAGING environment"
+          else
+            echo "🔧 Development deployment - debug mode enabled"
+          fi
+
+      - name: Version Validation
+        run: |
+          echo "=== Version Validation ==="
+          echo "Deploying version: ${{ github.event.inputs.version }}"
+          if [[ "${{ github.event.inputs.version }}" == "latest" ]]; then
+            echo "⚠️  Using latest version - consider using specific version tags"
+          else
+            echo "✅ Using specific version: ${{ github.event.inputs.version }}"
+          fi
 
   deploy:
     needs: validate-inputs
     runs-on: ubuntu-latest
     steps:
-    # Your deployment steps here
+      - name: Pre-deployment Checks
+        run: |
+          echo "=== Pre-deployment Checks ==="
+          echo "Environment: ${{ github.event.inputs.environment }}"
+          echo "Version: ${{ github.event.inputs.version }}"
+          echo "Strategy: ${{ github.event.inputs.strategy }}"
+          echo "Tests will be skipped: ${{ github.event.inputs.skip_tests }}"
+
+      - name: Run Tests
+        if: github.event.inputs.skip_tests == 'false'
+        run: |
+          echo "🧪 Running tests for version ${{ github.event.inputs.version }}..."
+          echo "✅ All tests passed!"
+
+      - name: Deploy to Production
+        if: github.event.inputs.environment == 'production'
+        run: |
+          echo "🚀 Deploying version ${{ github.event.inputs.version }} to PRODUCTION with strategy ${{ github.event.inputs.strategy }}"
+          echo "🔒 Extra confirmation required"
+
+      - name: Deploy to Staging
+        if: github.event.inputs.environment == 'staging'
+        run: |
+          echo "🚀 Deploying version ${{ github.event.inputs.version }} to STAGING with strategy ${{ github.event.inputs.strategy }}"
+
+      - name: Deploy to Development
+        if: github.event.inputs.environment == 'development'
+        run: |
+          echo "🚀 Deploying version ${{ github.event.inputs.version }} to DEVELOPMENT with strategy ${{ github.event.inputs.strategy }}"
+
+      - name: Strategy-Based Deployment
+        run: |
+          echo "=== Deploying with ${{ github.event.inputs.strategy }} strategy ==="
+          if [[ "${{ github.event.inputs.strategy }}" == "rolling" ]]; then
+            echo "Rolling update in progress..."
+          elif [[ "${{ github.event.inputs.strategy }}" == "blue-green" ]]; then
+            echo "Blue-Green deployment strategy initiated..."
+          else
+            echo "Canary deployment strategy activated..."
+          fi
 
   notify:
     needs: deploy
     runs-on: ubuntu-latest
-    if: always()  # Run even if deployment fails
+    if: always()
     steps:
-    # Your notification steps here
+      - name: Deployment Status
+        run: |
+          echo "=== Deployment Status ==="
+          echo "Environment: ${{ github.event.inputs.environment }}"
+          echo "Version: ${{ github.event.inputs.version }}"
+          echo "Status: ${{ job.status }}"
+
+      - name: Send Notification
+        run: |
+          if [[ "${{ job.status }}" == "success" ]]; then
+            echo "✅ Deployment succeeded!"
+          else
+            echo "❌ Deployment failed! Please check logs."
+          fi
+          echo "📢 Sending notification to: ${{ github.event.inputs.channel }}"
+          echo "🔗 Deployment details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
