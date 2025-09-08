@@ -1,14 +1,8 @@
-name: Event Name Detector
-
-on:
-  workflow_dispatch: {}
-  push:
-    branches: ["**"]
-  pull_request:
-    types: [opened, synchronize, reopened, edited, closed]
-
+name: Workflow Events
+on: [workflow_dispatch,push,pull_request]
 jobs:
   echo:
+    name: Event Detector
     runs-on: ubuntu-latest
     steps:
       - name: Show triggering event
