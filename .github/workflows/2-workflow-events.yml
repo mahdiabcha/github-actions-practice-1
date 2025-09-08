@@ -1,4 +1,15 @@
-name: Workflow Events
+name: Event Name Detector
+
 on:
+  workflow_dispatch: {}
+  push:
+    branches: ["**"]
+  pull_request:
+    types: [opened, synchronize, reopened, edited, closed]
 
 jobs:
+  echo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show triggering event
+        run: echo "I've been triggered by ${{ github.event_name }} event"
