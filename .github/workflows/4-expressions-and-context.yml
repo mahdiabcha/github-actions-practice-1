@@ -53,10 +53,3 @@ jobs:
     # Your Step 3: Environment Variables Test
     # Your Step 4: Secrets Context Test
 
-  logic-operations:
-    needs: context-explorer
-    runs-on: ubuntu-latest
-    steps:
-    # Your Step 1: Branch-based Conditional Steps (3 separate conditional steps)
-    # Your Step 2: OS Conditional Steps (3 separate conditional steps)
-    # Your Step 3: String Manipulation Functions
